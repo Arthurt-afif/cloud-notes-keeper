@@ -1,89 +1,56 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
 export interface Note {
   id: string;
-  user_id: string;
   title: string;
   content: string | null;
   tags: string[];
   created_at: string;
   updated_at: string;
-  photos?: NotePhoto[];
-}
-
-export interface NotePhoto {
-  id: string;
-  note_id: string;
   user_id: string;
-  file_path: string;
-  file_name: string;
-  created_at: string;
+  photos?: { id: string; file_path: string }[];
 }
 
 export function useNotes() {
-  const { user } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
   const fetchNotes = async () => {
-    if (!user) return;
-    
-    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('notes')
-        .select('*')
+        .select(`
+          *,
+          photos:note_photos(id, file_path)
+        `)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
-      
-      // Fetch photos for each note
-      const notesWithPhotos = await Promise.all(
-        (data || []).map(async (note) => {
-          const { data: photos } = await supabase
-            .from('note_photos')
-            .select('*')
-            .eq('note_id', note.id);
-          return { ...note, photos: photos || [] };
-        })
-      );
-      
-      setNotes(notesWithPhotos);
+      setNotes(data || []);
     } catch (error) {
       console.error('Error fetching notes:', error);
-      toast.error('Gagal memuat catatan');
+      toast.error('Gagal mengambil catatan');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (user) {
-      fetchNotes();
-    }
-  }, [user]);
+    fetchNotes();
+  }, []);
 
   const createNote = async (title: string, content: string, tags: string[]) => {
-    if (!user) return null;
-
     try {
       const { data, error } = await supabase
         .from('notes')
-        .insert({
-          user_id: user.id,
-          title,
-          content,
-          tags,
-        })
+        .insert([{ title, content, tags }])
         .select()
         .single();
 
       if (error) throw error;
-      
       await fetchNotes();
       toast.success('Catatan berhasil dibuat');
       return data;
@@ -98,11 +65,10 @@ export function useNotes() {
     try {
       const { error } = await supabase
         .from('notes')
-        .update({ title, content, tags })
+        .update({ title, content, tags, updated_at: new Date().toISOString() })
         .eq('id', id);
 
       if (error) throw error;
-      
       await fetchNotes();
       toast.success('Catatan berhasil diperbarui');
     } catch (error) {
@@ -113,24 +79,8 @@ export function useNotes() {
 
   const deleteNote = async (id: string) => {
     try {
-      // Delete photos from storage first
-      const { data: photos } = await supabase
-        .from('note_photos')
-        .select('file_path')
-        .eq('note_id', id);
-
-      if (photos && photos.length > 0) {
-        const filePaths = photos.map(p => p.file_path);
-        await supabase.storage.from('note-photos').remove(filePaths);
-      }
-
-      const { error } = await supabase
-        .from('notes')
-        .delete()
-        .eq('id', id);
-
+      const { error } = await supabase.from('notes').delete().eq('id', id);
       if (error) throw error;
-      
       await fetchNotes();
       toast.success('Catatan berhasil dihapus');
     } catch (error) {
@@ -140,12 +90,9 @@ export function useNotes() {
   };
 
   const uploadPhoto = async (noteId: string, file: File) => {
-    if (!user) return null;
-
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `${user.id}/${noteId}/${fileName}`;
+      const filePath = `${noteId}/${Math.random()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('note-photos')
@@ -157,7 +104,6 @@ export function useNotes() {
         .from('note_photos')
         .insert({
           note_id: noteId,
-          user_id: user.id,
           file_path: filePath,
           file_name: file.name,
         });
@@ -177,14 +123,8 @@ export function useNotes() {
   const deletePhoto = async (photoId: string, filePath: string) => {
     try {
       await supabase.storage.from('note-photos').remove([filePath]);
-      
-      const { error } = await supabase
-        .from('note_photos')
-        .delete()
-        .eq('id', photoId);
-
+      const { error } = await supabase.from('note_photos').delete().eq('id', photoId);
       if (error) throw error;
-
       await fetchNotes();
       toast.success('Foto berhasil dihapus');
     } catch (error) {

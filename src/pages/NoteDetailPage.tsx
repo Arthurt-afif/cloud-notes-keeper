@@ -40,13 +40,14 @@ export default function NoteDetailPage() {
 
   useEffect(() => {
     const foundNote = notes.find((n) => n.id === noteId);
-    if (foundNote) {
+    // PERBAIKAN: Hanya update state lokal jika TIDAK sedang dalam mode edit
+    if (foundNote && !isEditing) {
       setNote(foundNote);
       setEditTitle(foundNote.title);
       setEditContent(foundNote.content || '');
       setEditTags(foundNote.tags || []);
     }
-  }, [noteId, notes]);
+  }, [noteId, notes, isEditing]);
 
   if (authLoading || loading) {
     return <LoadingSpinner />;
@@ -76,7 +77,6 @@ export default function NoteDetailPage() {
 
   const handleSave = async () => {
     if (!editTitle.trim()) return;
-
     setSaving(true);
     try {
       await updateNote(note.id, editTitle.trim(), editContent.trim(), editTags);
@@ -102,7 +102,6 @@ export default function NoteDetailPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="page-container max-w-lg mx-auto">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -110,7 +109,7 @@ export default function NoteDetailPage() {
         >
           <button
             onClick={() => navigate(-1)}
-            className="w-10 h-10 rounded-xl bg-card flex items-center justify-center shadow-note hover:shadow-note-hover transition-shadow"
+            className="w-10 h-10 rounded-xl bg-card flex items-center justify-center shadow-md hover:shadow-lg transition-shadow"
           >
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
@@ -118,28 +117,16 @@ export default function NoteDetailPage() {
           <div className="flex items-center gap-2">
             {isEditing ? (
               <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsEditing(false)}
-                >
+                <Button variant="ghost" size="icon" onClick={() => setIsEditing(false)}>
                   <X className="w-5 h-5" />
                 </Button>
                 <Button onClick={handleSave} disabled={saving}>
-                  {saving ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 </Button>
               </>
             ) : (
               <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsEditing(true)}
-                >
+                <Button variant="ghost" size="icon" onClick={() => setIsEditing(true)}>
                   <Edit2 className="w-5 h-5" />
                 </Button>
                 <AlertDialog>
@@ -168,11 +155,9 @@ export default function NoteDetailPage() {
           </div>
         </motion.div>
 
-        {/* Content */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
           className="space-y-4"
         >
           {isEditing ? (
@@ -183,14 +168,12 @@ export default function NoteDetailPage() {
                 onChange={(e) => setEditTitle(e.target.value)}
                 className="text-xl font-bold h-12"
               />
-
               <Textarea
                 placeholder="Tulis catatan Anda di sini..."
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
                 className="min-h-[200px] resize-none"
               />
-
               <div>
                 <p className="text-sm text-muted-foreground mb-2">Tags</p>
                 <TagInput tags={editTags} onChange={setEditTags} />
@@ -199,32 +182,18 @@ export default function NoteDetailPage() {
           ) : (
             <>
               <h1 className="text-2xl font-bold text-foreground">{note.title}</h1>
-              
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>
-                  Dibuat {format(new Date(note.created_at), 'd MMMM yyyy, HH:mm', { locale: id })}
-                </span>
+              <div className="text-sm text-muted-foreground">
+                Dibuat {format(new Date(note.created_at), 'd MMMM yyyy, HH:mm', { locale: id })}
               </div>
-
               {note.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {note.tags.map((tag) => (
-                    <span key={tag} className="tag-pill">
-                      {tag}
-                    </span>
-                  ))}
+                  {note.tags.map((tag) => <span key={tag} className="tag-pill">{tag}</span>)}
                 </div>
               )}
-
-              {note.content && (
-                <p className="text-foreground whitespace-pre-wrap leading-relaxed">
-                  {note.content}
-                </p>
-              )}
+              {note.content && <p className="text-foreground whitespace-pre-wrap leading-relaxed">{note.content}</p>}
             </>
           )}
 
-          {/* Photos */}
           <div className="pt-4 border-t border-border">
             <p className="text-sm font-medium text-foreground mb-3">Foto</p>
             <PhotoUploader
@@ -236,7 +205,6 @@ export default function NoteDetailPage() {
           </div>
         </motion.div>
       </div>
-
       <BottomNav />
     </div>
   );
