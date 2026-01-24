@@ -1,17 +1,16 @@
 {
-  "background_color": "#ffffff",
-  "dir": "ltr",
-  "display": "standalone",
-  "name": "notes",
-  "orientation": "portrait",
-  "scope": "/",
-  "short_name": "kepeer",
+  "name": "Aplikasi Catatan",
+  "short_name": "Catatan",
+  "description": "Aplikasi catatan sederhana berbasis web",
+  "id": "com.catatan.app",
   "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
   "theme_color": "#ffffff",
-  "id": "com.notes.online",
-  "lang": "id"
-
- "icons": [
+  "lang": "id",
+  "icons": [
     {
       "src": "/icon1.png",
       "sizes": "192x192",
@@ -34,4 +33,3 @@
     }
   ]
 }
-
