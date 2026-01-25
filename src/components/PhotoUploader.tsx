@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { Camera, X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { NotePhoto } from '@/hooks/useNotes';
+import type { NotePhoto } from '@/hooks/useNotes';
 
 interface PhotoUploaderProps {
   photos: NotePhoto[];
