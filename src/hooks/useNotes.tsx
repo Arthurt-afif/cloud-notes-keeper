@@ -2,6 +2,12 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+export interface NotePhoto {
+  id: string;
+  file_path: string;
+  file_name?: string;
+}
+
 export interface Note {
   id: string;
   title: string;
@@ -10,7 +16,7 @@ export interface Note {
   created_at: string;
   updated_at: string;
   user_id: string;
-  photos?: { id: string; file_path: string }[];
+  photos?: NotePhoto[];
 }
 
 export function useNotes() {
@@ -44,9 +50,15 @@ export function useNotes() {
 
   const createNote = async (title: string, content: string, tags: string[]) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Anda harus login terlebih dahulu');
+        return null;
+      }
+
       const { data, error } = await supabase
         .from('notes')
-        .insert([{ title, content, tags }])
+        .insert([{ title, content, tags, user_id: user.id }])
         .select()
         .single();
 
@@ -91,6 +103,12 @@ export function useNotes() {
 
   const uploadPhoto = async (noteId: string, file: File) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Anda harus login terlebih dahulu');
+        return null;
+      }
+
       const fileExt = file.name.split('.').pop();
       const filePath = `${noteId}/${Math.random()}.${fileExt}`;
 
@@ -106,6 +124,7 @@ export function useNotes() {
           note_id: noteId,
           file_path: filePath,
           file_name: file.name,
+          user_id: user.id,
         });
 
       if (insertError) throw insertError;
