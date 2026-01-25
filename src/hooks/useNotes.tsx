@@ -110,13 +110,17 @@ export function useNotes() {
       }
 
       const fileExt = file.name.split('.').pop();
-      const filePath = `${noteId}/${Math.random()}.${fileExt}`;
+      // Use user.id as folder name to match storage RLS policy
+      const filePath = `${user.id}/${noteId}_${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('note-photos')
         .upload(filePath, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        throw uploadError;
+      }
 
       const { error: insertError } = await supabase
         .from('note_photos')
@@ -127,7 +131,12 @@ export function useNotes() {
           user_id: user.id,
         });
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('Database insert error:', insertError);
+        // Clean up uploaded file if database insert fails
+        await supabase.storage.from('note-photos').remove([filePath]);
+        throw insertError;
+      }
 
       await fetchNotes();
       toast.success('Foto berhasil diupload');
