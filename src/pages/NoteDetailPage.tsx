@@ -9,6 +9,7 @@ import { useNotes, Note } from '@/hooks/useNotes';
 import { BottomNav } from '@/components/BottomNav';
 import { TagInput } from '@/components/TagInput';
 import { PhotoUploader } from '@/components/PhotoUploader';
+import { FormattedText } from '@/lib/formatText';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -190,7 +191,11 @@ export default function NoteDetailPage() {
                   {note.tags.map((tag) => <span key={tag} className="tag-pill">{tag}</span>)}
                 </div>
               )}
-              {note.content && <p className="text-foreground whitespace-pre-wrap leading-relaxed">{note.content}</p>}
+              {note.content && (
+                <p className="text-foreground whitespace-pre-wrap leading-relaxed">
+                  <FormattedText text={note.content} />
+                </p>
+              )}
             </>
           )}
 

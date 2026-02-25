@@ -172,12 +172,25 @@ export function useNotes() {
     return doc.body.textContent || '';
   };
 
+  // Strip formatting symbols for search: **bold**, *bold*, _italic_, ~strike~, #r(text)
+  const stripFormatSymbols = (text: string): string => {
+    if (!text) return '';
+    let result = text;
+    result = result.replace(/#[rbgy]\(([^)]*)\)/gi, '$1');
+    result = result.replace(/\*\*(.+?)\*\*/g, '$1');
+    result = result.replace(/\*(.+?)\*/g, '$1');
+    result = result.replace(/(?<!\w)_(.+?)_(?!\w)/g, '$1');
+    result = result.replace(/~(.+?)~/g, '$1');
+    return result;
+  };
+
   const filteredNotes = notes.filter(note => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
-    const plainContent = note.content ? stripHtml(note.content).toLowerCase() : '';
+    const plainContent = note.content ? stripFormatSymbols(stripHtml(note.content)).toLowerCase() : '';
+    const plainTitle = stripFormatSymbols(note.title).toLowerCase();
     return (
-      note.title.toLowerCase().includes(query) ||
+      plainTitle.includes(query) ||
       plainContent.includes(query) ||
       note.tags.some(tag => tag.toLowerCase().includes(query))
     );

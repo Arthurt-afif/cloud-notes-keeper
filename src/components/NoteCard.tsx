@@ -3,6 +3,7 @@ import { id } from 'date-fns/locale';
 import { motion } from 'framer-motion';
 import { Image } from 'lucide-react';
 import { Note } from '@/hooks/useNotes';
+import { stripFormatSymbols } from '@/lib/formatText';
 
 interface NoteCardProps {
   note: Note;
@@ -38,7 +39,7 @@ function HighlightText({ text, query }: { text: string; query: string }) {
 export function NoteCard({ note, onClick, getPhotoUrl, searchQuery = '' }: NoteCardProps) {
   const hasPhotos = note.photos && note.photos.length > 0;
   const firstPhoto = hasPhotos ? note.photos![0] : null;
-  const plainContent = note.content ? stripHtml(note.content) : '';
+  const plainContent = note.content ? stripFormatSymbols(stripHtml(note.content)) : '';
 
   return (
     <motion.div
