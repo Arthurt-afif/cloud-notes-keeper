@@ -52,6 +52,7 @@ export default function NotesPage() {
                   note={note}
                   onClick={() => navigate(`/note/${note.id}`)}
                   getPhotoUrl={getPhotoUrl}
+                  searchQuery={searchQuery}
                 />
               ))}
             </AnimatePresence>

@@ -8,11 +8,37 @@ interface NoteCardProps {
   note: Note;
   onClick: () => void;
   getPhotoUrl: (path: string) => string;
+  searchQuery?: string;
 }
 
-export function NoteCard({ note, onClick, getPhotoUrl }: NoteCardProps) {
+function stripHtml(html: string): string {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return doc.body.textContent || '';
+}
+
+function HighlightText({ text, query }: { text: string; query: string }) {
+  if (!query || !text) return <>{text}</>;
+  
+  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  const parts = text.split(regex);
+  
+  return (
+    <>
+      {parts.map((part, i) =>
+        regex.test(part) ? (
+          <mark key={i} className="bg-yellow-300/60 text-foreground rounded-sm px-0.5">{part}</mark>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  );
+}
+
+export function NoteCard({ note, onClick, getPhotoUrl, searchQuery = '' }: NoteCardProps) {
   const hasPhotos = note.photos && note.photos.length > 0;
   const firstPhoto = hasPhotos ? note.photos![0] : null;
+  const plainContent = note.content ? stripHtml(note.content) : '';
 
   return (
     <motion.div
@@ -47,11 +73,11 @@ export function NoteCard({ note, onClick, getPhotoUrl }: NoteCardProps) {
         {/* Content */}
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-foreground truncate mb-1">
-            {note.title}
+            <HighlightText text={note.title} query={searchQuery} />
           </h3>
-          {note.content && (
+          {plainContent && (
             <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-              {note.content}
+              <HighlightText text={plainContent} query={searchQuery} />
             </p>
           )}
           <div className="flex items-center gap-2 flex-wrap">
@@ -60,7 +86,7 @@ export function NoteCard({ note, onClick, getPhotoUrl }: NoteCardProps) {
             </span>
             {note.tags.slice(0, 2).map((tag) => (
               <span key={tag} className="tag-pill">
-                {tag}
+                <HighlightText text={tag} query={searchQuery} />
               </span>
             ))}
             {note.tags.length > 2 && (
