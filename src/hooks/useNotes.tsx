@@ -166,12 +166,19 @@ export function useNotes() {
     return data.publicUrl;
   };
 
+  // Strip HTML tags to get plain text for searching
+  const stripHtml = (html: string): string => {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    return doc.body.textContent || '';
+  };
+
   const filteredNotes = notes.filter(note => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
+    const plainContent = note.content ? stripHtml(note.content).toLowerCase() : '';
     return (
       note.title.toLowerCase().includes(query) ||
-      (note.content && note.content.toLowerCase().includes(query)) ||
+      plainContent.includes(query) ||
       note.tags.some(tag => tag.toLowerCase().includes(query))
     );
   });
